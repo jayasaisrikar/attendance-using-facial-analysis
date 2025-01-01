@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Manage Timetable</h2>
+    
+    <!-- Add Timetable Form -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Add Timetable Entry</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.program.id_for_label }}" class="form-label">Program</label>
+                        {{ form.program }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.branch.id_for_label }}" class="form-label">Branch</label>
+                        {{ form.branch }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.year.id_for_label }}" class="form-label">Year</label>
+                        {{ form.year }}
+                    </div>
+                    {% if is_admin %}
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.faculty.id_for_label }}" class="form-label">Faculty</label>
+                        {{ form.faculty }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.day.id_for_label }}" class="form-label">Day</label>
+                        {{ form.day }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.period.id_for_label }}" class="form-label">Period</label>
+                        {{ form.period }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.subject.id_for_label }}" class="form-label">Subject</label>
+                        {{ form.subject }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Entry</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Timetable -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Current Timetable</h4>
+            {% if is_admin %}
+            <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" onclick="exportTimetable()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Period</th>
+                            <th>Subject</th>
+                            <th>Program</th>
+                            <th>Branch</th>
+                            <th>Year</th>
+                            {% if is_admin %}
+                            <th>Faculty</th>
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in timetable %}
+                        <tr>
+                            <td>{{ entry.day }}</td>
+                            <td>{{ entry.period }}</td>
+                            <td>{{ entry.subject }}</td>
+                            <td>{{ entry.program }}</td>
+                            <td>{{ entry.branch }}</td>
+                            <td>{{ entry.year }}</td>
+                            {% if is_admin %}
+                            <td>{{ entry.faculty.user.email }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTimetableEntry({{ entry.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

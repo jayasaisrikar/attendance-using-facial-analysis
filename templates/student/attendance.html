@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Attendance</h2>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>My Attendance</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendance in student.attendance_set.all %}
+                            <tr>
+                                <td>{{ attendance.date }}</td>
+                                <td>{{ attendance.subject }}</td>
+                                <td>
+                                    {% if attendance.is_present %}
+                                        Present
+                                    {% else %}
+                                        Absent
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand">Student Dashboard</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'student_dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'view_timetable' %}">View Timetable</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'attendance' %}">Attendance</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Student Info Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Student Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ student.user.get_full_name|default:student.user.email }}</p>
+                        <p><strong>Roll Number:</strong> {{ student.roll_number }}</p>
+                        <p><strong>Program:</strong> {{ student.program }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Branch:</strong> {{ student.branch }}</p>
+                        <p><strong>Year:</strong> {{ student.year }}</p>
+                        <p><strong>Overall Attendance:</strong> {{ attendance_percentage }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Stats -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5>Total Classes</h5>
+                        <h2>{{ total_classes }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5>Classes Attended</h5>
+                        <h2>{{ classes_attended }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5>Days Present This Month</h5>
+                        <h2>{{ monthly_attendance }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject-wise Attendance -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Subject-wise Attendance</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Total Classes</th>
+                                <th>Classes Attended</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject, data in subject_attendance.items %}
+                            <tr>
+                                <td>{{ subject }}</td>
+                                <td>{{ data.total }}</td>
+                                <td>{{ data.attended }}</td>
+                                <td>{{ data.percentage }}%</td>
+                                <td>
+                                    {% if data.percentage >= 75 %}
+                                        <span class="badge bg-success">Good</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Need Improvement</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timetable -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>My Timetable</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                {% for day in days %}
+                                    <th>{{ day }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for period in periods %}
+                                <tr>
+                                    <td>Period {{ period }}</td>
+                                    {% for day in days %}
+                                        <td>
+                                            {% for entry in timetable|get_item:day %}
+                                                {% if entry.period == period %}
+                                                    {{ entry.subject }}<br>
+                                                    <small>{{ entry.faculty.user.get_full_name }}</small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Trend Chart -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Attendance Trend</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('attendanceTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ attendance_dates|safe }},
+            datasets: [{
+                label: 'Daily Attendance',
+                data: {{ attendance_counts|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

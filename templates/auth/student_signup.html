@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Student Registration</h3>
+            </div>
+            <div class="card-body">
+                <form id="signup-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Face Images</label>
+                        <button type="button" id="start-camera" class="btn btn-secondary mb-3">
+                            Start Camera
+                        </button>
+                        <div class="camera-container mb-3" style="display: none;">
+                            <video id="video-preview" autoplay playsinline></video>
+                            <button type="button" id="capture-btn" class="btn btn-primary capture-btn">
+                                Capture Image (<span id="image-count">0</span>/10)
+                            </button>
+                        </div>
+                        <div id="preview-container" class="preview-container"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" id="submit-btn" disabled>
+                        Complete Registration
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/camera.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const camera = new CameraCapture();
+        camera.init();
+        
+        const submitBtn = document.getElementById('submit-btn');
+        const imageCount = document.getElementById('image-count');
+        
+        document.getElementById('capture-btn').addEventListener('click', () => {
+            camera.capture();
+            const count = parseInt(imageCount.textContent) + 1;
+            imageCount.textContent = count;
+            
+            if (count >= 1) {  // Enable submit after at least one image
+                submitBtn.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %} 

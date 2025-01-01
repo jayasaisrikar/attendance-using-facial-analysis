@@ -1,0 +1,17 @@
+attendance_system/
+│
+├── attendance/          # Main project directory (already exists)
+├── core/               # Main application directory (already exists)
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── media/
+│   └── student_images/ # For storing student photos
+├── templates/
+│   ├── base.html
+│   ├── auth/
+│   ├── admin/
+│   ├── faculty/
+│   └── student/
+└── face_recognition/   # ML module

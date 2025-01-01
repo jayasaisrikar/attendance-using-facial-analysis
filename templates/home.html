@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    {% if not user.is_authenticated %}
+        <!-- Existing welcome content for non-authenticated users -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-8 text-center">
+                <h1>Welcome to Face Recognition Attendance System</h1>
+                <p class="lead mt-4">An intelligent way to manage attendance using facial recognition</p>
+                
+                <div class="mt-5">
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg me-3">Login</a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary btn-lg dropdown-toggle" 
+                                data-bs-toggle="dropdown">
+                            Register
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'student_signup' %}">As Student</a></li>
+                            <li><a class="dropdown-item" href="{% url 'faculty_signup' %}">As Faculty</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- New interactive dashboard for authenticated users -->
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="welcome-card">
+                    <h2>Welcome back, {{ user.get_full_name|default:user.email }}!</h2>
+                    <p class="text-muted">{{ current_time|date:"l, F j, Y" }}</p>
+                </div>
+                
+                <!-- Quick Actions Card -->
+                <div class="card mt-4 action-card">
+                    <div class="card-header">
+                        <h4>Quick Actions</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% if user.user_type == 'student' %}
+                                <div class="col-md-4">
+                                    <a href="{% url 'student_dashboard' %}" class="quick-action-btn">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        <span>View Dashboard</span>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'view_timetable' %}" class="quick-action-btn">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Today's Schedule</span>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'attendance' %}" class="quick-action-btn">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>View Attendance</span>
+                                    </a>
+                                </div>
+                            {% elif user.user_type == 'faculty' %}
+                                <div class="col-md-4">
+                                    <a href="{% url 'faculty_dashboard' %}" class="quick-action-btn">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                        <span>Take Attendance</span>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'view_records' %}" class="quick-action-btn">
+                                        <i class="fas fa-history"></i>
+                                        <span>View Records</span>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'manage_timetable' %}" class="quick-action-btn">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Manage Schedule</span>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Summary -->
+            <div class="col-md-4">
+                <div class="card summary-card">
+                    <div class="card-header">
+                        <h4>Activity Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if user.user_type == 'student' %}
+                            <div class="attendance-summary">
+                                <div class="progress-circle" data-value="{{ attendance_percentage }}">
+                                    <span class="progress-text">{{ attendance_percentage }}%</span>
+                                </div>
+                                <p class="text-center mt-2">Overall Attendance</p>
+                            </div>
+                        {% elif user.user_type == 'faculty' %}
+                            <div class="today-summary">
+                                <h5>Today's Classes</h5>
+                                {% for class in today_classes %}
+                                    <div class="class-item">
+                                        <span class="time">{{ class.period }}</span>
+                                        <span class="subject">{{ class.subject }}</span>
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted">No classes scheduled for today</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add this to your CSS file -->
+<style>
+.welcome-card {
+    background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-5px);
+    background: #e9ecef;
+    color: #000DFF;
+}
+
+.quick-action-btn i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: conic-gradient(#000DFF calc(var(--value) * 1%), #f0f0f0 0);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.class-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.class-item .time {
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-right: 1rem;
+    font-weight: bold;
+}
+</style>
+
+<!-- Add Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %} 

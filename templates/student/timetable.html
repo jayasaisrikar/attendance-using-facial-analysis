@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container">
+    <h2>Timetable</h2>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>My Timetable</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            {% for day in days %}
+                                <th>{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for period in periods %}
+                            <tr>
+                                <td>Period {{ period }}</td>
+                                {% for day in days %}
+                                    <td>
+                                        {% for entry in timetable|get_item:day %}
+                                            {% if entry.period == period %}
+                                                {{ entry.subject }}<br>
+                                                <small>{{ entry.faculty.user.get_full_name }}</small>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Faculty Dashboard</h2>
+    
+    {% if messages %}
+    <div class="messages mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Select Class</h4>
+        </div>
+        <div class="card-body">
+            <form id="filterForm" method="get">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="program" class="form-label">Program</label>
+                        <select class="form-control" id="program" name="program" required>
+                            <option value="">Select Program</option>
+                            {% for prog in programs %}
+                                <option value="{{ prog }}" {% if selected_filters.program == prog %}selected{% endif %}>
+                                    {{ prog }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="branch" class="form-label">Branch</label>
+                        <select class="form-control" id="branch" name="branch" required>
+                            <option value="">Select Branch</option>
+                            {% for branch in branches %}
+                                <option value="{{ branch }}" {% if selected_filters.branch == branch %}selected{% endif %}>
+                                    {{ branch }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="year" class="form-label">Year</label>
+                        <select class="form-control" id="year" name="year" required>
+                            <option value="">Select Year</option>
+                            {% for year in years %}
+                                <option value="{{ year }}" {% if selected_filters.year == year|stringformat:"i" %}selected{% endif %}>
+                                    {{ year }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="day" class="form-label">Day</label>
+                        <select class="form-control" id="day" name="day" required>
+                            <option value="">Select Day</option>
+                            {% for day in days_of_week %}
+                                <option value="{{ day }}" {% if selected_filters.day == day %}selected{% endif %}>
+                                    {{ day }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if subjects %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Take Attendance</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="attendanceForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <select class="form-control" id="subject" name="subject" required>
+                        <option value="">Select Subject</option>
+                        {% for subject in subjects %}
+                            <option value="{{ subject.subject }}">
+                                {{ subject.subject }} (Period {{ subject.period }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="classroom-image" class="form-label">Class Image</label>
+                    <input type="file" class="form-control" id="classroom-image" name="classroom_image" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Take Attendance</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recognized_students %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Recognized Students</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Roll Number</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in recognized_students %}
+                        <tr>
+                            <td>{{ student.roll_number }}</td>
+                            <td>{{ student.user.email }}</td>
+                            <td><span class="badge bg-success">Present</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    ['program', 'branch', 'year', 'day'].forEach(field => {
+        const element = document.getElementById(field);
+        if (element) {
+            element.addEventListener('change', () => filterForm.submit());
+        }
+    });
+});
+</script>
+{% endblock %} 
