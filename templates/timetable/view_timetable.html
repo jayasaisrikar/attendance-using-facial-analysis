@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">
+                {% if is_admin %}
+                    All Timetables
+                {% elif is_student %}
+                    Timetable - {{ student.branch }} (Year {{ student.year }})
+                {% else %}
+                    Faculty Timetable - {{ faculty.user.get_full_name }}
+                {% endif %}
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Time</th>
+                            {% for day in days %}
+                            <th>{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for time_slot in time_slots %}
+                        <tr>
+                            <td>{{ time_slot }}</td>
+                            {% for day in days %}
+                            <td>
+                                {% for class in timetable_by_day|getattribute:day %}
+                                    {% if class.time_slot == time_slot %}
+                                    <div class="class-entry">
+                                        <strong>{{ class.subject }}</strong><br>
+                                        {{ class.faculty.user.get_full_name }}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.class-entry {
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 2px 0;
+}
+</style>
+{% endblock %}

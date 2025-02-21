@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">My Account</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if user.is_student and user.student.profile_image %}
+                            <img src="{{ user.student.profile_image.url }}" class="rounded-circle profile-img mb-3" alt="Profile Picture">
+                        {% elif user.is_faculty and user.faculty.profile_image %}
+                            <img src="{{ user.faculty.profile_image.url }}" class="rounded-circle profile-img mb-3" alt="Profile Picture">
+                        {% else %}
+                            <img src="/static/images/default-profile.png" class="rounded-circle profile-img mb-3" alt="Default Profile">
+                        {% endif %}
+                        
+                        <form method="post" enctype="multipart/form-data" id="profile-image-form">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="profile_image" class="btn btn-outline-primary">
+                                    <i class="fas fa-camera me-2"></i>Change Profile Picture
+                                </label>
+                                <input type="file" id="profile_image" name="profile_image" class="d-none" onchange="this.form.submit()">
+                            </div>
+                        </form>
+                    </div>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        {% if user.is_student %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Roll Number</label>
+                                <input type="text" class="form-control" value="{{ user.student.roll_number }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Branch</label>
+                                <input type="text" class="form-control" value="{{ user.student.branch }}" readonly>
+                            </div>
+                        </div>
+                        {% elif user.is_faculty %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Employee ID</label>
+                                <input type="text" class="form-control" value="{{ user.faculty.employee_id }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Department</label>
+                                <input type="text" class="form-control" value="{{ user.faculty.department }}" readonly>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 3px solid #007bff;
+}
+.form-control:read-only {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %} 

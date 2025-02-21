@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    .page-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .card-header {
+        background-color: #007bff;
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 1.5rem;
+    }
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+        color: #212529;
+    }
+    .table th,
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid #dee2e6;
+    }
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .table tbody tr:nth-of-type(even) {
+        background-color: #f8f9fa;
+    }
+    .table tbody tr:hover {
+        background-color: #e9ecef;
+    }
+    .btn {
+        font-weight: 600;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+        transition: all 0.15s ease-in-out;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+    .btn-success {
+        color: #fff;
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-danger {
+        color: #fff;
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    .btn-success:hover, .btn-danger:hover {
+        filter: brightness(90%);
+    }
+    .text-center {
+        text-align: center;
+    }
+    @media (max-width: 768px) {
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Pending Approvals</h1>
+
+    <!-- Pending Students -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="m-0">Pending Student Approvals</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Roll Number</th>
+                            <th>Branch</th>
+                            <th>Year</th>
+                            <th>Course</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in pending_students %}
+                        <tr>
+                            <td>{{ student.user.username }}</td>
+                            <td>{{ student.roll_number }}</td>
+                            <td>{{ student.branch }}</td>
+                            <td>{{ student.year }}</td>
+                            <td>{{ student.course }}</td>
+                            <td>
+                                <form method="post" action="{% url 'approve_student' student.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check mr-1"></i> Approve
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'reject_student' student.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times mr-1"></i> Reject
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No pending student approvals</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Faculty -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="m-0">Pending Faculty Approvals</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Department</th>
+                            <th>Employee ID</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for faculty in pending_faculty %}
+                        <tr>
+                            <td>{{ faculty.user.username }}</td>
+                            <td>{{ faculty.department }}</td>
+                            <td>{{ faculty.employee_id }}</td>
+                            <td>
+                                <form method="post" action="{% url 'approve_faculty' faculty.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check mr-1"></i> Approve
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'reject_faculty' faculty.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times mr-1"></i> Reject
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No pending faculty approvals</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+{% endblock %}
+

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Add Timetable Entry</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Day</label>
+                            <select name="day" class="form-select" required>
+                                {% for day in days %}
+                                    <option value="{{ day }}">{{ day }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time Slot</label>
+                            <select name="time_slot" class="form-select" required>
+                                {% for slot in time_slots %}
+                                    <option value="{{ slot }}">{{ slot }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" name="subject" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Branch</label>
+                            <input type="text" name="branch" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Year</label>
+                            <input type="number" name="year" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Course</label>
+                            <input type="text" name="course" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Entry</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Current Timetable</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Subject</th>
+                                    <th>Branch</th>
+                                    <th>Year</th>
+                                    <th>Course</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in timetable %}
+                                <tr>
+                                    <td>{{ entry.day }}</td>
+                                    <td>{{ entry.time_slot }}</td>
+                                    <td>{{ entry.subject }}</td>
+                                    <td>{{ entry.branch }}</td>
+                                    <td>{{ entry.year }}</td>
+                                    <td>{{ entry.course }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

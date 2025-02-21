@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Monthly Attendance Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyAttendanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Subject-wise Attendance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="subjectAttendanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5>Attendance Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Total Classes</th>
+                        <th>Classes Attended</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subject_summary %}
+                    <tr>
+                        <td>{{ subject.name }}</td>
+                        <td>{{ subject.total_classes }}</td>
+                        <td>{{ subject.attended_classes }}</td>
+                        <td>{{ subject.percentage }}%</td>
+                        <td>
+                            {% if subject.percentage >= 75 %}
+                            <span class="badge bg-success">Good</span>
+                            {% elif subject.percentage >= 60 %}
+                            <span class="badge bg-warning">Average</span>
+                            {% else %}
+                            <span class="badge bg-danger">Low</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+    const attendanceData = {{ attendance_data|safe }};
+    initializeCharts(attendanceData);
+</script>
+{% endblock %}

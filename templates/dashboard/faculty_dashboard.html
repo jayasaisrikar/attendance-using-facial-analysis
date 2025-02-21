@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+    }
+    .dashboard-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        height: 100%;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+    }
+    .card-title {
+        color: #007bff;
+        font-weight: bold;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    .card-text {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        border-radius: 25px;
+        padding: 8px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+    .icon-wrapper {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h5 class="card-title">Take Attendance</h5>
+                    <p class="card-text">Take attendance for your classes using face recognition.</p>
+                    <a href="{% url 'take_attendance' %}" class="btn btn-primary">
+                        <i class="fas fa-camera me-2"></i>Take
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h5 class="card-title">View Attendance</h5>
+                    <p class="card-text">View and manage attendance records for your classes.</p>
+                    <a href="{% url 'view_attendance' %}" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>View
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h5 class="card-title">Manage Timetable</h5>
+                    <p class="card-text">Update and organize your class schedule and timetable efficiently.</p>
+                    <a href="{% url 'timetable:manage_timetable' %}" class="btn btn-primary">
+                        <i class="fas fa-cog me-2"></i>Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('.icon-wrapper i').addClass('fa-3x mb-3');
+    });
+</script>
+{% endblock %}
+
