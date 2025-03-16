@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import Student, Faculty
+from django.utils import timezone
 
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -26,3 +27,19 @@ class ClassPhoto(models.Model):
 
     def __str__(self):
         return f"{self.subject} - {self.date}"
+
+# New model for attendance alerts
+class AttendanceAlert(models.Model):
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=100)
+    branch = models.CharField(max_length=50)
+    year = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.subject} - {self.branch} - Year {self.year}"
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at

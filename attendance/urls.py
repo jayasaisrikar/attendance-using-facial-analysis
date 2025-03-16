@@ -8,4 +8,7 @@ urlpatterns = [
     path('export/', views.export_attendance, name='export_attendance'),
     path('process/<int:photo_id>/', views.process_attendance, name='process_attendance'),
     path('statistics/', views.attendance_statistics, name='attendance_statistics'),
+    path('trigger-alert/', views.trigger_attendance_alert, name='trigger_attendance_alert'),
+    path('check-alerts/', views.check_alerts, name='check_alerts'),
+    path('mark-from-alert/', views.mark_attendance_from_alert, name='mark_attendance_from_alert'),
 ]

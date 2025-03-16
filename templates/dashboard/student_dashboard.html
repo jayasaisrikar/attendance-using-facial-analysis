@@ -68,6 +68,9 @@
 <div class="container py-5">
     <h1 class="text-center mb-5" style="color: #007bff; font-weight: bold;">Student Dashboard</h1>
     
+    <!-- Hidden CSRF token for AJAX requests -->
+    {% csrf_token %}
+    
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
@@ -144,5 +147,136 @@
 
 {% block extra_js %}
 <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script>
+    // Function to check for attendance alerts
+    function checkAttendanceAlerts() {
+        fetch('{% url "check_alerts" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.alerts && data.alerts.length > 0) {
+                    // Get the first alert (most recent)
+                    const alert = data.alerts[0];
+                    showAttendanceAlert(alert);
+                }
+            })
+            .catch(error => console.error('Error checking alerts:', error));
+    }
+
+    // Function to show the attendance alert modal
+    function showAttendanceAlert(alert) {
+        // Create modal HTML
+        const modalHtml = `
+            <div class="modal fade" id="attendanceAlertModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">
+                                <i class="fas fa-bell me-2"></i>Attendance Alert
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your attendance is being taken for:</p>
+                            <div class="alert alert-info">
+                                <strong>Subject:</strong> ${alert.subject}<br>
+                                <strong>Faculty:</strong> ${alert.faculty}<br>
+                                <strong>Time Remaining:</strong> <span id="timeRemaining">${Math.floor(alert.remaining_seconds / 60)}:${(alert.remaining_seconds % 60).toString().padStart(2, '0')}</span>
+                            </div>
+                            <p>Click the button below to mark your attendance.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" id="markAttendanceBtn">
+                                <i class="fas fa-check me-2"></i>Mark Me Present
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to the page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Show the modal
+        const modalElement = document.getElementById('attendanceAlertModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        
+        // Set up countdown timer
+        let remainingSeconds = alert.remaining_seconds;
+        const timerElement = document.getElementById('timeRemaining');
+        const timerId = setInterval(() => {
+            remainingSeconds--;
+            if (remainingSeconds <= 0) {
+                clearInterval(timerId);
+                modal.hide();
+                modalElement.remove();
+            } else {
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = remainingSeconds % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+        
+        // Set up mark attendance button
+        document.getElementById('markAttendanceBtn').addEventListener('click', () => {
+            markAttendance(alert.id);
+        });
+    }
+
+    // Function to mark attendance
+    function markAttendance(alertId) {
+        // Create a token for CSRF protection
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch('{% url "mark_attendance_from_alert" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                alert_id: alertId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const modalBody = document.querySelector('#attendanceAlertModal .modal-body');
+                modalBody.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>${data.message}
+                    </div>
+                    <p>Your attendance has been recorded successfully.</p>
+                `;
+                
+                // Change button to disabled
+                document.getElementById('markAttendanceBtn').disabled = true;
+                document.getElementById('markAttendanceBtn').textContent = 'Attendance Marked';
+                
+                // Refresh the recent attendance section after 2 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                alert(data.message || data.error || 'An error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Error marking attendance:', error);
+            alert('Failed to mark attendance. Please try again.');
+        });
+    }
+
+    // Check for alerts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        checkAttendanceAlerts();
+        
+        // Check for new alerts every 30 seconds
+        setInterval(checkAttendanceAlerts, 30000);
+    });
+</script>
 {% endblock %}
 
