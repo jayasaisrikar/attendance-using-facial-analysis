@@ -2,12 +2,16 @@ from cv2 import FaceRecognizerSF
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Attendance, ClassPhoto
+from .models import Attendance, ClassPhoto, AttendanceAlert
 from users.models import Student
 from timetable.models import TimeTable
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+from django.utils import timezone
 from .face_recognition.recognizer import OptimizedFaceRecognizer
 import os
+from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
 
 @login_required
 def take_attendance(request):
@@ -304,3 +308,118 @@ def attendance_statistics(request):
         return response
 
     return render(request, 'attendance/statistics.html', context)
+
+@login_required
+def trigger_attendance_alert(request):
+    if not request.user.is_faculty:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        branch = request.POST.get('branch')
+        year = int(request.POST.get('year'))
+        duration_minutes = int(request.POST.get('duration', 5))  # Default 5 minutes
+        
+        # Check if there's already an active alert for this class
+        existing_alert = AttendanceAlert.objects.filter(
+            faculty=request.user.faculty,
+            subject=subject,
+            branch=branch,
+            year=year,
+            is_active=True,
+            expires_at__gt=timezone.now()
+        ).first()
+        
+        if existing_alert:
+            messages.warning(request, 'An active attendance alert already exists for this class.')
+            return redirect('view_attendance')
+        
+        # Create new alert
+        expires_at = timezone.now() + timedelta(minutes=duration_minutes)
+        alert = AttendanceAlert.objects.create(
+            faculty=request.user.faculty,
+            subject=subject,
+            branch=branch,
+            year=year,
+            expires_at=expires_at
+        )
+        
+        messages.success(request, f'Attendance alert triggered! Students have {duration_minutes} minutes to respond.')
+        return redirect('view_attendance')
+    
+    return render(request, 'attendance/trigger_alert.html')
+
+@login_required
+def check_alerts(request):
+    """API endpoint for students to check if there are any active alerts for them"""
+    if not request.user.is_student:
+        return JsonResponse({'error': 'Only students can check alerts'}, status=403)
+    
+    student = request.user.student
+    
+    # Find active alerts for this student's branch and year
+    active_alerts = AttendanceAlert.objects.filter(
+        branch=student.branch,
+        year=student.year,
+        is_active=True,
+        expires_at__gt=timezone.now()
+    ).order_by('-created_at')
+    
+    alerts_data = []
+    for alert in active_alerts:
+        alerts_data.append({
+            'id': alert.id,
+            'subject': alert.subject,
+            'faculty': alert.faculty.user.get_full_name(),
+            'expires_at': alert.expires_at.isoformat(),
+            'remaining_seconds': int((alert.expires_at - timezone.now()).total_seconds())
+        })
+    
+    return JsonResponse({'alerts': alerts_data})
+
+@csrf_exempt
+@login_required
+def mark_attendance_from_alert(request):
+    """API endpoint for students to mark their attendance from an alert"""
+    if not request.user.is_student:
+        return JsonResponse({'error': 'Only students can mark attendance'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        alert_id = data.get('alert_id')
+        
+        alert = AttendanceAlert.objects.get(
+            id=alert_id,
+            is_active=True,
+            expires_at__gt=timezone.now()
+        )
+        
+        # Check if attendance already exists
+        existing_attendance = Attendance.objects.filter(
+            student=request.user.student,
+            faculty=alert.faculty,
+            subject=alert.subject,
+            date=timezone.now().date()
+        ).first()
+        
+        if existing_attendance:
+            messages.warning(request, 'You have already marked your attendance for this class.')
+            return JsonResponse({'success': False, 'message': 'Attendance already marked'})
+        
+        # Mark attendance as present
+        Attendance.objects.create(
+            student=request.user.student,
+            faculty=alert.faculty,
+            subject=alert.subject,
+            date=timezone.now().date(),
+            is_present=True
+        )
+        
+        messages.success(request, 'Attendance marked successfully')
+        return JsonResponse({'success': True})
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
