@@ -20,8 +20,19 @@
                             <input type="text" name="branch" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Year</label>
-                            <input type="number" name="year" class="form-control" required>
+                            <label class="form-label">Course</label>
+                            <select name="course" class="form-control" id="courseSelect" required>
+                                <option value="" disabled selected>Select Course</option>
+                                <option value="BTech">BTech</option>
+                                <option value="MCA">MCA</option>
+                                <option value="MTech">MTech</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Semester</label>
+                            <select name="semester" class="form-control" id="semesterSelect" required>
+                                <option value="" disabled selected>Select Semester</option>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Class Photo</label>
@@ -48,6 +59,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -55,6 +67,27 @@
 document.getElementById('attendanceForm').addEventListener('submit', function() {
     document.getElementById('loadingOverlay').style.display = 'block';
     document.getElementById('submitBtn').disabled = true;
+});
+
+// Function to update semester dropdown based on selected course
+document.getElementById('courseSelect').addEventListener('change', function() {
+    let course = this.value;
+    let semesterSelect = document.getElementById('semesterSelect');
+    semesterSelect.innerHTML = '<option value="" disabled selected>Select Semester</option>'; // Reset options
+
+    let semesters = [];
+    if (course === 'BTech') {
+        semesters = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'];
+    } else if (course === 'MCA' || course === 'MTech') {
+        semesters = ['1-1', '1-2', '2-1', '2-2'];
+    }
+
+    semesters.forEach(sem => {
+        let option = document.createElement('option');
+        option.value = sem;
+        option.textContent = sem;
+        semesterSelect.appendChild(option);
+    });
 });
 </script>
 {% endblock %}

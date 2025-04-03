@@ -35,13 +35,24 @@
                             <label class="form-label">Branch</label>
                             <input type="text" name="branch" class="form-control" required>
                         </div>
-                        <div class="mb-3">
+                        <!-- Year field commented out -->
+                        <!-- <div class="mb-3">
                             <label class="form-label">Year</label>
-                            <input type="number" name="year" class="form-control" required>
-                        </div>
+                            <input type="number" name="year" class="form-control">
+                        </div> -->
                         <div class="mb-3">
                             <label class="form-label">Course</label>
-                            <input type="text" name="course" class="form-control" required>
+                            <select name="course" class="form-select" required>
+                                <option value="BTech">BTech</option>
+                                <option value="MCA">MCA</option>
+                                <option value="MTech">MTech</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Semester</label>
+                            <select name="semester" class="form-select" required>
+                                <!-- Semester options will be updated dynamically based on selected course -->
+                            </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Add Entry</button>
                     </form>
@@ -63,8 +74,8 @@
                                     <th>Time</th>
                                     <th>Subject</th>
                                     <th>Branch</th>
-                                    <th>Year</th>
                                     <th>Course</th>
+                                    <th>Semester</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -74,8 +85,8 @@
                                     <td>{{ entry.time_slot }}</td>
                                     <td>{{ entry.subject }}</td>
                                     <td>{{ entry.branch }}</td>
-                                    <td>{{ entry.year }}</td>
                                     <td>{{ entry.course }}</td>
+                                    <td>{{ entry.semester }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -86,4 +97,34 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const courseSelect = document.querySelector("select[name='course']");
+    const semesterSelect = document.querySelector("select[name='semester']");
+
+    function updateSemesters() {
+        const course = courseSelect.value;
+        semesterSelect.innerHTML = "";
+        let semesters = [];
+        
+        if (course === "BTech") {
+            semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"];
+        } else if (course === "MCA" || course === "MTech") {
+            semesters = ["1-1", "1-2", "2-1", "2-2"];
+        }
+        
+        semesters.forEach(sem => {
+            const option = document.createElement("option");
+            option.value = sem;
+            option.textContent = sem;
+            semesterSelect.appendChild(option);
+        });
+    }
+    
+    courseSelect.addEventListener("change", updateSemesters);
+    updateSemesters();
+});
+</script>
+
 {% endblock %}
