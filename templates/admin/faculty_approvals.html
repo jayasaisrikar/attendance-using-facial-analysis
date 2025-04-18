@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    .page-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .card-header {
+        background-color: #28a745;
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 1.5rem;
+    }
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+        color: #212529;
+    }
+    .table th,
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid #dee2e6;
+    }
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .table tbody tr:nth-of-type(even) {
+        background-color: #f8f9fa;
+    }
+    .table tbody tr:hover {
+        background-color: #e9ecef;
+    }
+    .btn {
+        font-weight: 600;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+        transition: all 0.15s ease-in-out;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+    .btn-success {
+        color: #fff;
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-danger {
+        color: #fff;
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    .btn-success:hover, .btn-danger:hover {
+        filter: brightness(90%);
+    }
+    .text-center {
+        text-align: center;
+    }
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #495057;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+    }
+    .nav-tabs .nav-link.active {
+        color: #28a745;
+        border-bottom-color: #28a745;
+        background-color: transparent;
+    }
+    .nav-tabs .nav-link:hover {
+        border-color: transparent;
+        border-bottom-color: #dee2e6;
+    }
+    .profile-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .bulk-actions {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .select-all-container {
+        margin-bottom: 10px;
+    }
+    @media (max-width: 768px) {
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Faculty Approvals</h1>
+    
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                <i class="fas fa-clock me-2"></i>Pending Approvals ({{ pending_faculty.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
+                <i class="fas fa-check-circle me-2"></i>Approved Faculty ({{ approved_faculty.count }})
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="myTabContent">
+        <!-- Pending Faculty Tab -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+            <div class="bulk-actions">
+                <div class="select-all-container">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAllFaculty">
+                        <label class="form-check-label" for="selectAllFaculty">
+                            <strong>Select All</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <button id="bulkApproveFaculty" class="btn btn-success me-2">
+                        <i class="fas fa-check me-1"></i> Approve Selected
+                    </button>
+                    <button id="bulkRejectFaculty" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i> Reject Selected
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="m-0">Pending Faculty Approvals</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Profile</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Employee ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for faculty in pending_faculty %}
+                                <tr>
+                                    <td>
+                                        <input class="form-check-input faculty-checkbox" type="checkbox" value="{{ faculty.pk }}">
+                                    </td>
+                                    <td>
+                                        {% if faculty.profile_image %}
+                                            <img src="{{ faculty.profile_image.url }}" class="profile-img" alt="Profile">
+                                        {% else %}
+                                            <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ faculty.user.username }}</td>
+                                    <td>
+                                        {% if faculty.user.first_name or faculty.user.last_name %}
+                                            {{ faculty.user.first_name }} {{ faculty.user.last_name }}
+                                        {% else %}
+                                            <span class="text-muted">No name provided</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ faculty.user.email }}</td>
+                                    <td>{{ faculty.department }}</td>
+                                    <td>{{ faculty.employee_id }}</td>
+                                    <td>
+                                        <form method="post" action="{% url 'approve_faculty' faculty.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fas fa-check me-1"></i> Approve
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{% url 'reject_faculty' faculty.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-times me-1"></i> Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center">No pending faculty approvals</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Approved Faculty Tab -->
+        <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="m-0">Approved Faculty</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Profile</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Employee ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for faculty in approved_faculty %}
+                                <tr>
+                                    <td>
+                                        {% if faculty.profile_image %}
+                                            <img src="{{ faculty.profile_image.url }}" class="profile-img" alt="Profile">
+                                        {% else %}
+                                            <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ faculty.user.username }}</td>
+                                    <td>
+                                        {% if faculty.user.first_name or faculty.user.last_name %}
+                                            {{ faculty.user.first_name }} {{ faculty.user.last_name }}
+                                        {% else %}
+                                            <span class="text-muted">No name provided</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ faculty.user.email }}</td>
+                                    <td>{{ faculty.department }}</td>
+                                    <td>{{ faculty.employee_id }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No approved faculty</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('selectAllFaculty');
+        const facultyCheckboxes = document.querySelectorAll('.faculty-checkbox');
+        const bulkApproveBtn = document.getElementById('bulkApproveFaculty');
+        const bulkRejectBtn = document.getElementById('bulkRejectFaculty');
+        
+        // Select all functionality
+        selectAllCheckbox.addEventListener('change', function() {
+            facultyCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
+        
+        // Bulk approve functionality
+        bulkApproveBtn.addEventListener('click', function() {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                alert('Please select at least one faculty to approve');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to approve ${selectedIds.length} faculty member(s)?`)) {
+                bulkAction('approve', selectedIds);
+            }
+        });
+        
+        // Bulk reject functionality
+        bulkRejectBtn.addEventListener('click', function() {
+            const selectedIds = getSelectedIds();
+            if (selectedIds.length === 0) {
+                alert('Please select at least one faculty to reject');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to reject ${selectedIds.length} faculty member(s)? This action cannot be undone.`)) {
+                bulkAction('reject', selectedIds);
+            }
+        });
+        
+        // Helper function to get selected IDs
+        function getSelectedIds() {
+            const selectedIds = [];
+            facultyCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedIds.push(checkbox.value);
+                }
+            });
+            return selectedIds;
+        }
+        
+        // Helper function to perform bulk action
+        function bulkAction(action, ids) {
+            // Create a form and submit it
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = action === 'approve' ? '{% url "bulk_approve_faculty" %}' : '{% url "bulk_reject_faculty" %}';
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+            
+            // Add faculty IDs
+            ids.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'faculty_ids';
+                input.value = id;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+</script>
+{% endblock %} 

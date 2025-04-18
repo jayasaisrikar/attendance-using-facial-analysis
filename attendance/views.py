@@ -423,3 +423,61 @@ def mark_attendance_from_alert(request):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def mark_absent_students(request):
+    if not request.user.is_faculty:
+        return redirect('dashboard')
+        
+    if request.method == 'POST':
+        alert_id = request.POST.get('alert_id')
+        
+        try:
+            alert = AttendanceAlert.objects.get(
+                id=alert_id,
+                faculty=request.user.faculty,
+                is_active=True
+            )
+            
+            # Get all students for this branch and year
+            students = Student.objects.filter(
+                branch=alert.branch,
+                year=alert.year,
+                user__is_approved=True
+            )
+            
+            # Mark absent students
+            absent_count = 0
+            for student in students:
+                # Check if student already has attendance marked
+                existing_attendance = Attendance.objects.filter(
+                    student=student,
+                    faculty=alert.faculty,
+                    subject=alert.subject,
+                    date=timezone.now().date()
+                ).exists()
+                
+                if not existing_attendance:
+                    # Mark as absent
+                    Attendance.objects.create(
+                        student=student,
+                        faculty=alert.faculty,
+                        subject=alert.subject,
+                        date=timezone.now().date(),
+                        is_present=False
+                    )
+                    absent_count += 1
+            
+            # Mark alert as processed
+            alert.is_active = False
+            alert.save()
+            
+            
+            messages.success(request, f'{absent_count} students marked absent')
+            return redirect('view_attendance')
+        
+        except Exception as e:
+            messages.error(request, f'Error marking absent students: {str(e)}')
+            return redirect('view_attendance')
+        
+        
