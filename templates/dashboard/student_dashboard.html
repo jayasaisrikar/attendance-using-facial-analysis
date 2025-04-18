@@ -146,20 +146,32 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
     // Function to check for attendance alerts
     function checkAttendanceAlerts() {
+        console.log('Checking for attendance alerts...');
         fetch('{% url "check_alerts" %}')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Alert data received:', data);
                 if (data.alerts && data.alerts.length > 0) {
                     // Get the first alert (most recent)
                     const alert = data.alerts[0];
+                    console.log('Showing alert:', alert);
                     showAttendanceAlert(alert);
+                } else {
+                    console.log('No active alerts found');
                 }
             })
-            .catch(error => console.error('Error checking alerts:', error));
+            .catch(error => {
+                console.error('Error checking for alerts:', error);
+            });
     }
 
     // Function to show the attendance alert modal
@@ -182,12 +194,38 @@
                                 <strong>Faculty:</strong> ${alert.faculty}<br>
                                 <strong>Time Remaining:</strong> <span id="timeRemaining">${Math.floor(alert.remaining_seconds / 60)}:${(alert.remaining_seconds % 60).toString().padStart(2, '0')}</span>
                             </div>
-                            <p>Click the button below to mark your attendance.</p>
+                            <p>Please capture your photo to mark attendance:</p>
+                            
+                            <div id="cameraErrorMessage" class="alert alert-danger" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span id="errorText">Camera access error</span>
+                            </div>
+                            
+                            <div class="camera-container mb-3">
+                                <video id="cameraPreview" class="w-100 rounded" style="display: none;" playsinline autoplay></video>
+                                <canvas id="photoCanvas" class="w-100 rounded" style="display: none;"></canvas>
+                                <img id="capturedPhoto" class="w-100 rounded" style="display: none;">
+                            </div>
+                            
+                            <div class="d-flex justify-content-center mb-3">
+                                <button type="button" class="btn btn-primary me-2" id="startCameraBtn">
+                                    <i class="fas fa-camera me-2"></i>Start Camera
+                                </button>
+                                <button type="button" class="btn btn-secondary me-2 d-none" id="switchCameraBtn">
+                                    <i class="fas fa-sync me-2"></i>Switch Camera
+                                </button>
+                                <button type="button" class="btn btn-info me-2" id="capturePhotoBtn" style="display: none;">
+                                    <i class="fas fa-camera-retro me-2"></i>Capture Photo
+                                </button>
+                                <button type="button" class="btn btn-danger" id="retakePhotoBtn" style="display: none;">
+                                    <i class="fas fa-redo me-2"></i>Retake
+                                </button>
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-success" id="markAttendanceBtn">
-                                <i class="fas fa-check me-2"></i>Mark Me Present
+                            <button type="button" class="btn btn-success" id="markAttendanceBtn" disabled>
+                                <i class="fas fa-check me-2"></i>Submit Attendance
                             </button>
                         </div>
                     </div>
@@ -210,6 +248,7 @@
             remainingSeconds--;
             if (remainingSeconds <= 0) {
                 clearInterval(timerId);
+                stopCamera();
                 modal.hide();
                 modalElement.remove();
             } else {
@@ -219,17 +258,221 @@
             }
         }, 1000);
         
+        // Video elements
+        const videoElement = document.getElementById('cameraPreview');
+        const canvasElement = document.getElementById('photoCanvas');
+        const photoElement = document.getElementById('capturedPhoto');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+        const retakePhotoBtn = document.getElementById('retakePhotoBtn');
+        const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+        const errorMessageEl = document.getElementById('cameraErrorMessage');
+        const errorTextEl = document.getElementById('errorText');
+        
+        let stream = null;
+        let facingMode = "user"; // Start with front camera (selfie)
+        let availableDevices = [];
+        
+        // Check if we're on a mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Set up camera functionality
+        startCameraBtn.addEventListener('click', () => startCamera());
+        switchCameraBtn.addEventListener('click', switchCamera);
+        capturePhotoBtn.addEventListener('click', capturePhoto);
+        retakePhotoBtn.addEventListener('click', retakePhoto);
+        
+        // Function to check for camera support and permissions
+        function checkCameraSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError("Camera access is not supported in your browser. Please try using a different browser.");
+                return false;
+            }
+            return true;
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorTextEl.textContent = message;
+            errorMessageEl.style.display = 'block';
+            startCameraBtn.disabled = false;
+        }
+        
+        // Hide error message
+        function hideError() {
+            errorMessageEl.style.display = 'none';
+        }
+        
+        // List available camera devices
+        async function listCameraDevices() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                console.log("enumerateDevices() not supported.");
+                return [];
+            }
+            
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                console.log('Available cameras:', videoDevices.length);
+                return videoDevices;
+            } catch (err) {
+                console.error('Error listing camera devices:', err);
+                return [];
+            }
+        }
+        
+        // Switch between front and back camera
+        async function switchCamera() {
+            if (stream) {
+                // Stop current stream
+                stopCamera();
+                
+                // Toggle camera mode
+                facingMode = facingMode === "user" ? "environment" : "user";
+                
+                // Restart camera with new facingMode
+                await startCamera();
+            }
+        }
+        
+        // Start the camera with appropriate constraints for device type
+        async function startCamera() {
+            if (!checkCameraSupport()) return;
+            
+            hideError();
+            startCameraBtn.disabled = true;
+            
+            try {
+                // For mobile, use facingMode to select front or back camera
+                const constraints = {
+                    video: isMobile 
+                        ? { 
+                            facingMode: facingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                          }
+                        : true
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = stream;
+                
+                // Wait for video to be ready
+                videoElement.onloadedmetadata = () => {
+                    videoElement.play()
+                        .then(() => {
+                            videoElement.style.display = 'block';
+                            startCameraBtn.style.display = 'none';
+                            capturePhotoBtn.style.display = 'inline-block';
+                            
+                            // Check if device has multiple cameras
+                            listCameraDevices().then(devices => {
+                                availableDevices = devices;
+                                if (isMobile && devices.length > 1) {
+                                    switchCameraBtn.classList.remove('d-none');
+                                }
+                            });
+                        })
+                        .catch(err => {
+                            showError(`Error playing video: ${err.message}`);
+                        });
+                };
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                
+                let errorMessage = 'Could not access camera. ';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Please check your camera permissions in browser settings.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += 'No camera device found.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage += 'Camera may be in use by another application.';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage += 'Camera constraints not satisfied. Try a different camera.';
+                } else {
+                    errorMessage += error.message || 'Unknown camera error.';
+                }
+                
+                showError(errorMessage);
+                startCameraBtn.disabled = false;
+            }
+        }
+        
+        function capturePhoto() {
+            try {
+                const context = canvasElement.getContext('2d');
+                
+                // Set canvas dimensions to match video
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+                
+                // Draw the current frame from video to canvas
+                context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+                
+                // Convert canvas to image
+                const imageDataUrl = canvasElement.toDataURL('image/jpeg', 0.8);
+                photoElement.src = imageDataUrl;
+                
+                // Show captured photo, hide video
+                videoElement.style.display = 'none';
+                photoElement.style.display = 'block';
+                capturePhotoBtn.style.display = 'none';
+                switchCameraBtn.classList.add('d-none');
+                retakePhotoBtn.style.display = 'inline-block';
+                markAttendanceBtn.disabled = false;
+            } catch (error) {
+                console.error('Error capturing photo:', error);
+                showError('Failed to capture photo: ' + error.message);
+            }
+        }
+        
+        function retakePhoto() {
+            // Hide photo, show video again
+            photoElement.style.display = 'none';
+            videoElement.style.display = 'block';
+            retakePhotoBtn.style.display = 'none';
+            if (isMobile && availableDevices.length > 1) {
+                switchCameraBtn.classList.remove('d-none');
+            }
+            capturePhotoBtn.style.display = 'inline-block';
+            markAttendanceBtn.disabled = true;
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                stream = null;
+            }
+        }
+        
+        // Clean up when modal is closed
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            stopCamera();
+        });
+        
         // Set up mark attendance button
-        document.getElementById('markAttendanceBtn').addEventListener('click', () => {
-            markAttendance(alert.id);
+        markAttendanceBtn.addEventListener('click', () => {
+            const photoData = photoElement.src;
+            markAttendanceWithPhoto(alert.id, photoData);
         });
     }
 
-    // Function to mark attendance
-    function markAttendance(alertId) {
+    // Function to mark attendance with photo
+    function markAttendanceWithPhoto(alertId, photoData) {
         // Create a token for CSRF protection
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
+        // Show loading state
+        const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+        const originalBtnText = markAttendanceBtn.innerHTML;
+        markAttendanceBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+        markAttendanceBtn.disabled = true;
+        
+        console.log('Submitting attendance with photo');
         fetch('{% url "mark_attendance_from_alert" %}', {
             method: 'POST',
             headers: {
@@ -237,45 +480,109 @@
                 'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
-                alert_id: alertId
+                alert_id: alertId,
+                photo_data: photoData
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            // Check if the response is ok before parsing JSON
+            if (!response.ok && response.status !== 400) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Attendance response data:', data);
             if (data.success) {
                 // Show success message
                 const modalBody = document.querySelector('#attendanceAlertModal .modal-body');
                 modalBody.innerHTML = `
                     <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-2"></i>${data.message}
+                        <i class="fas fa-check-circle me-2"></i>${data.message || 'Face recognized successfully!'}
                     </div>
                     <p>Your attendance has been recorded successfully.</p>
                 `;
                 
                 // Change button to disabled
-                document.getElementById('markAttendanceBtn').disabled = true;
-                document.getElementById('markAttendanceBtn').textContent = 'Attendance Marked';
+                markAttendanceBtn.disabled = true;
+                markAttendanceBtn.textContent = 'Attendance Marked';
                 
                 // Refresh the recent attendance section after 2 seconds
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
             } else {
-                alert(data.message || data.error || 'An error occurred');
+                // Show specific error message with guidance
+                const modalBody = document.querySelector('#attendanceAlertModal .modal-body');
+                
+                let errorMessage = data.message || data.error || 'Face not recognized';
+                let guidanceMessage = 'Please try again or contact your faculty.';
+                
+                // Provide more specific guidance based on error message
+                if (errorMessage.includes('reference images')) {
+                    guidanceMessage = 'Contact your administrator to upload your reference photos.';
+                } else if (errorMessage.includes('face verification failed')) {
+                    guidanceMessage = 'Please ensure you have good lighting, position your face clearly in the center, and remove any face coverings.';
+                }
+                
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>${errorMessage}
+                    </div>
+                    <p>${guidanceMessage}</p>
+                    <button type="button" class="btn btn-primary mt-3" id="tryAgainBtn">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                `;
+                
+                // Set up try again button
+                document.getElementById('tryAgainBtn').addEventListener('click', () => {
+                    location.reload();
+                });
             }
         })
         .catch(error => {
             console.error('Error marking attendance:', error);
-            alert('Failed to mark attendance. Please try again.');
+            const modalBody = document.querySelector('#attendanceAlertModal .modal-body');
+            
+            // More detailed error message with remediation steps
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>Connection Error
+                </div>
+                <p>We couldn't connect to the server. This may be due to network issues.</p>
+                <p>Please check your internet connection and try again.</p>
+                <button type="button" class="btn btn-primary mt-3" id="tryAgainBtn">
+                    <i class="fas fa-redo me-2"></i>Try Again
+                </button>
+            `;
+            
+            // Reset button state
+            markAttendanceBtn.innerHTML = originalBtnText;
+            markAttendanceBtn.disabled = false;
+            
+            // Set up try again button
+            document.getElementById('tryAgainBtn').addEventListener('click', () => {
+                location.reload();
+            });
         });
     }
 
     // Check for alerts when the page loads
     document.addEventListener('DOMContentLoaded', function() {
-        checkAttendanceAlerts();
-        
-        // Check for new alerts every 30 seconds
-        setInterval(checkAttendanceAlerts, 30000);
+        console.log('DOM loaded, initializing attendance alert system');
+        // Ensure we have access to Bootstrap's modal functionality
+        if (typeof bootstrap !== 'undefined') {
+            console.log('Bootstrap is loaded');
+            // Run initial check
+            checkAttendanceAlerts();
+            
+            // Check for new alerts every 30 seconds
+            setInterval(checkAttendanceAlerts, 30000);
+        } else {
+            console.error('Bootstrap is not loaded! Modal functionality will not work.');
+        }
     });
 </script>
 {% endblock %}
