@@ -12,6 +12,7 @@ import os
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
+from utils.email_utils import send_attendance_notification
 
 @login_required
 def take_attendance(request):
@@ -95,6 +96,8 @@ def take_attendance(request):
                             attendance_count += 1
                         else:
                             absent_count += 1
+                        # Send email notification when attendance is created
+                        send_attendance_notification(student, subject, today, is_present)
                             
                 except Exception as e:
                     messages.warning(request, f"Error marking attendance for {student.roll_number}: {str(e)}")
@@ -227,13 +230,16 @@ def process_attendance(request, photo_id):
     # Mark attendance for recognized students
     for student_id in recognized_students:
         student = Student.objects.get(roll_number=student_id)
-        Attendance.objects.create(
+        attendance = Attendance.objects.create(
             student=student,
             faculty=request.user.faculty,
             subject=class_photo.subject,
             date=class_photo.date,
             is_present=True
         )
+        
+        # Send email notification after marking attendance
+        send_attendance_notification(student, class_photo.subject, class_photo.date, True)
     
     class_photo.processed = True
     class_photo.save()
@@ -573,13 +579,16 @@ def mark_attendance_from_alert(request):
                 })
             
             # Mark attendance as present
-            Attendance.objects.create(
+            attendance = Attendance.objects.create(
                 student=student,
                 faculty=alert.faculty,
                 subject=alert.subject,
                 date=timezone.now().date(),
                 is_present=True
             )
+            
+            # Send email notification after marking attendance
+            send_attendance_notification(student, alert.subject, timezone.now().date(), True)
             
             logger.info(f"Successfully marked attendance for student {student.roll_number}")
             return JsonResponse({
