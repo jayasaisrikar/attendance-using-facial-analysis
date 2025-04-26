@@ -227,22 +227,50 @@ def process_attendance(request, photo_id):
     recognizer = FaceRecognizerSF('media/student_images')
     recognized_students = recognizer.recognize_faces(class_photo.photo.path)
     
-    # Mark attendance for recognized students
-    for student_id in recognized_students:
-        student = Student.objects.get(roll_number=student_id)
-        attendance = Attendance.objects.create(
-            student=student,
-            faculty=request.user.faculty,
-            subject=class_photo.subject,
-            date=class_photo.date,
-            is_present=True
-        )
-        
-        # Send email notification after marking attendance
-        send_attendance_notification(student, class_photo.subject, class_photo.date, True)
+    # Get all students for this branch and year
+    all_students = Student.objects.filter(
+        branch=class_photo.branch,
+        year=class_photo.year,
+        user__is_approved=True
+    )
+    
+    # Count present and absent students
+    present_count = 0
+    absent_count = 0
+    
+    # Process attendance for all students
+    for student in all_students:
+        try:
+            # Check if student was recognized (present)
+            is_present = student.roll_number in recognized_students
+            
+            # Create the attendance record
+            attendance, created = Attendance.objects.get_or_create(
+                student=student,
+                faculty=request.user.faculty,
+                subject=class_photo.subject,
+                date=class_photo.date,
+                defaults={'is_present': is_present}
+            )
+            
+            if created:
+                if is_present:
+                    present_count += 1
+                else:
+                    absent_count += 1
+                # Send email notification for the attendance
+                send_attendance_notification(student, class_photo.subject, class_photo.date, is_present)
+                
+        except Exception as e:
+            messages.warning(request, f"Error marking attendance for {student.roll_number}: {str(e)}")
     
     class_photo.processed = True
     class_photo.save()
+    
+    messages.success(
+        request,
+        f'Attendance marked: {present_count} present, {absent_count} absent'
+    )
     
     return redirect('view_attendance')
 
@@ -589,6 +617,31 @@ def mark_attendance_from_alert(request):
             
             # Send email notification after marking attendance
             send_attendance_notification(student, alert.subject, timezone.now().date(), True)
+            
+            # Get total number of students in this class
+            from users.models import Student
+            total_students = Student.objects.filter(
+                branch=student.branch,
+                year=student.year,
+                user__is_approved=True
+            ).count()
+            
+            # Get number of students who have already marked attendance
+            marked_attendance = Attendance.objects.filter(
+                faculty=alert.faculty,
+                subject=alert.subject,
+                date=timezone.now().date()
+            ).count()
+            
+            # If this is close to being the last student (85% or more have marked attendance)
+            # OR if we're close to the expiry time (less than 30 seconds remaining)
+            time_remaining = (alert.expires_at - timezone.now()).total_seconds()
+            if marked_attendance >= total_students * 0.85 or time_remaining < 30:
+                logger.info(f"Marking absent students because {marked_attendance}/{total_students} students have marked attendance")
+                # Mark all other students as absent
+                if not alert.attendance_finalized:
+                    absent_count = alert.mark_absent_students()
+                    logger.info(f"Marked {absent_count} students as absent")
             
             logger.info(f"Successfully marked attendance for student {student.roll_number}")
             return JsonResponse({
