@@ -102,6 +102,13 @@
     .mt-3 {
         margin-top: 1rem;
     }
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .action-btns {
+        white-space: nowrap;
+    }
     @media (max-width: 768px) {
         .table-responsive {
             overflow-x: auto;
@@ -147,6 +154,9 @@
                             <th>Student</th>
                             {% endif %}
                             <th>Status</th>
+                            {% if user.is_faculty %}
+                            <th>Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -168,10 +178,20 @@
                                 </span>
                                 {% endif %}
                             </td>
+                            {% if user.is_faculty %}
+                            <td class="action-btns">
+                                <a href="{% url 'edit_attendance' record.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'delete_attendance' record.id %}" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </a>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="{% if user.is_faculty %}4{% else %}3{% endif %}" class="text-center">
+                            <td colspan="{% if user.is_faculty %}5{% else %}3{% endif %}" class="text-center">
                                 No attendance records found.
                             </td>
                         </tr>

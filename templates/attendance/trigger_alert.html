@@ -5,10 +5,14 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Trigger Attendance Alert</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-camera me-2"></i>Trigger Camera Attendance Alert</h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i> Students will receive a notification to capture their photo for facial verification. Their faces will be compared to registered images for attendance verification.
+                    </div>
+                    
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -32,8 +36,11 @@
                         </button>
                     </form>
                 </div>
+                <div class="card-footer">
+                    <small class="text-muted">Students will need camera access on their devices to mark attendance. Only verified faces will be marked as present.</small>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
