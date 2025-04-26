@@ -14669,3 +14669,8 @@ django.template.exceptions.TemplateDoesNotExist: templates/dashboard/admin_dashb
 2025-04-26 10:59:55,863 - attendance.api - INFO - Marked 62 students as absent
 2025-04-26 10:59:55,863 - attendance.api - INFO - Successfully marked attendance for student 21VV1A1212
 2025-04-26 11:01:32,928 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\views.py changed, reloading.
+2025-04-26 13:15:38,618 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\urls.py changed, reloading.
+2025-04-26 13:16:11,760 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\views.py changed, reloading.
+2025-04-26 13:21:47,242 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\views.py changed, reloading.
+2025-04-26 13:23:59,199 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\views.py changed, reloading.
+2025-04-26 13:25:52,398 - django.utils.autoreload - INFO - D:\Git Repos\attendance-using-facial-analysis\attendance\views.py changed, reloading.

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">Delete Attendance</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Warning:</strong> This action cannot be undone.
+            </div>
+            
+            <p>You are about to delete the following attendance record:</p>
+            <ul class="list-unstyled mb-4">
+                <li><strong>Student:</strong> {{ attendance.student.user.get_full_name }} ({{ attendance.student.roll_number }})</li>
+                <li><strong>Date:</strong> {{ attendance.date }}</li>
+                <li><strong>Subject:</strong> {{ attendance.subject }}</li>
+                <li><strong>Status:</strong> 
+                    {% if attendance.is_present %}
+                        <span class="badge bg-success">Present</span>
+                    {% else %}
+                        <span class="badge bg-danger">Absent</span>
+                    {% endif %}
+                </li>
+            </ul>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i>Confirm Delete
+                    </button>
+                    <a href="{% url 'view_attendance' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

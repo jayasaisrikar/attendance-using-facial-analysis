@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        margin-top: 20px;
+    }
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin-right: 10px;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #dc3545;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #28a745;
+    }
+    input:focus + .slider {
+        box-shadow: 0 0 1px #28a745;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Edit Attendance</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h5>Attendance Details</h5>
+                <ul class="list-unstyled mb-0">
+                    <li><strong>Student:</strong> {{ attendance.student.user.get_full_name }} ({{ attendance.student.roll_number }})</li>
+                    <li><strong>Date:</strong> {{ attendance.date }}</li>
+                    <li><strong>Subject:</strong> {{ attendance.subject }}</li>
+                </ul>
+            </div>
+            
+            <form method="post" id="attendanceForm">
+                {% csrf_token %}
+                
+                <div class="toggle-container">
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="is_present" id="attendanceToggle" {% if attendance.is_present %}checked{% endif %} onchange="document.getElementById('attendanceForm').submit();">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="statusLabel" class="ms-2 fs-5">
+                        {% if attendance.is_present %}
+                            <span class="badge bg-success">Present</span>
+                        {% else %}
+                            <span class="badge bg-danger">Absent</span>
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{% url 'view_attendance' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Attendance List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // This script automatically submits the form when the toggle is changed
+    document.getElementById('attendanceToggle').addEventListener('change', function() {
+        document.getElementById('attendanceForm').submit();
+    });
+</script>
+{% endblock %}

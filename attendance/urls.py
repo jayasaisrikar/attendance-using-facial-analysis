@@ -11,4 +11,6 @@ urlpatterns = [
     path('trigger-alert/', views.trigger_attendance_alert, name='trigger_attendance_alert'),
     path('check-alerts/', views.check_alerts, name='check_alerts'),
     path('mark-from-alert/', views.mark_attendance_from_alert, name='mark_attendance_from_alert'),
+    path('edit/<int:attendance_id>/', views.edit_attendance, name='edit_attendance'),
+    path('delete/<int:attendance_id>/', views.delete_attendance, name='delete_attendance'),
 ]

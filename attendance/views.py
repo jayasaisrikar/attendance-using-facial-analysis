@@ -729,3 +729,56 @@ def mark_absent_students(request):
             messages.error(request, f'Error marking absent students: {str(e)}')
             return redirect('view_attendance')
 
+@login_required
+def edit_attendance(request, attendance_id):
+    """View for faculty to edit an attendance record"""
+    if not request.user.is_faculty:
+        messages.error(request, 'Only faculty members can edit attendance records.')
+        return redirect('dashboard')
+        
+    try:
+        attendance = Attendance.objects.get(id=attendance_id, faculty=request.user.faculty)
+    except Attendance.DoesNotExist:
+        messages.error(request, 'Attendance record not found.')
+        return redirect('view_attendance')
+        
+    if request.method == 'POST':
+        # Get the is_present value from the form
+        is_present = 'is_present' in request.POST
+        
+        # Update attendance status
+        attendance.is_present = is_present
+        attendance.save()
+        
+        # Send notification about the updated status
+        send_attendance_notification(attendance.student, attendance.subject, attendance.date, attendance.is_present)
+        
+        status = "Present" if attendance.is_present else "Absent"
+        messages.success(request, f'Attendance status updated to {status} for {attendance.student.user.get_full_name()}.')
+        
+        # Redirect back to the edit page to show the updated status
+        return redirect('edit_attendance', attendance_id=attendance_id)
+        
+    return render(request, 'attendance/edit_attendance.html', {'attendance': attendance})
+
+@login_required
+def delete_attendance(request, attendance_id):
+    """View for faculty to delete an attendance record"""
+    if not request.user.is_faculty:
+        messages.error(request, 'Only faculty members can delete attendance records.')
+        return redirect('dashboard')
+        
+    try:
+        attendance = Attendance.objects.get(id=attendance_id, faculty=request.user.faculty)
+    except Attendance.DoesNotExist:
+        messages.error(request, 'Attendance record not found.')
+        return redirect('view_attendance')
+        
+    if request.method == 'POST':
+        student_name = attendance.student.user.get_full_name()
+        attendance.delete()
+        messages.success(request, f'Attendance record deleted for {student_name}.')
+        return redirect('view_attendance')
+        
+    return render(request, 'attendance/delete_attendance.html', {'attendance': attendance})
+
